@@ -1,59 +1,108 @@
-  import React, { Suspense, useEffect } from 'react';
-  import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
-  import useUserStore from './store';
+import React, { Suspense, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import useUserStore from './store';
 
-  const AuthApp = React.lazy(() => import('auth/App'));
-  const DashboardApp = React.lazy(() => import('dashboard/App'));
+const AuthApp = React.lazy(() => import('auth/App'));
+const DashboardApp = React.lazy(() => import('dashboard/App'));
 
-  function Nav() {
-    const navigate = useNavigate();
-    const clearUser = useUserStore(state => state.clearUser);
+function Nav() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isAuthenticated = useUserStore(state => state.isAuthenticated);
+  const user = useUserStore(state => state.user);
+  const clearUser = useUserStore(state => state.clearUser);
 
-    const handleLogout = () => {
-      clearUser();
-      navigate('/auth');
-    };
+  const handleLogout = () => {
+    clearUser();
+    navigate('/auth');
+  };
 
-    return (
-      <nav style={{ padding: '1rem', borderBottom: '1px solid #ccc', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <Link to="/auth">Auth</Link>
-        <Link to="/dashboard">Dashboard</Link>
-        <button onClick={handleLogout} style={{ marginLeft: 'auto' }}>Logout</button>
-      </nav>
-    );
-  }
+  const isActive = (path) => location.pathname === path;
 
-  function AppRoutes() {
-    const isAuthenticated = useUserStore(state => state.isAuthenticated);
-    const navigate = useNavigate();
+  return (
+    <nav className="slide-down nav">
+      <div className="nav-brand">
+        <div className="nav-brand-icon">
+          <span>I</span>
+        </div>
+        <span className="nav-brand-text">
+          INSAIO demo PoC
+        </span>
+      </div>
 
-    useEffect(() => {
-      if (isAuthenticated) {
-        navigate('/dashboard');
-      }
-    }, [isAuthenticated]);
+      {isAuthenticated && (
+        <Link to="/dashboard" className={`nav-link${isActive('/dashboard') ? ' nav-link--active' : ''}`}>
+          Dashboard
+        </Link>
+      )}
 
-    return (
-      <Suspense fallback={<div>Loading...</div>}>
-        <Routes>
-          <Route path="/auth" element={<AuthApp />} />
-          <Route
-            path="/dashboard"
-            element={isAuthenticated ? <DashboardApp /> : <Navigate to="/auth" />}
-          />
-          <Route path="*" element={<Navigate to="/auth" />} />
-        </Routes>
-      </Suspense>
-    );
-  }
+      {isAuthenticated && (
+        <div className="nav-user">
+          <div className="nav-user-info">
+            {user?.avatar ? (
+              <img src={user.avatar} alt="" className="nav-avatar-img" />
+            ) : (
+              <div className="nav-avatar-placeholder">
+                <span>
+                  {user?.name?.charAt(0)?.toUpperCase()}
+                </span>
+              </div>
+            )}
+            <div>
+              <div className="nav-user-name">{user?.name}</div>
+              <div className="nav-user-email">{user?.email}</div>
+            </div>
+          </div>
+          <div className="nav-divider" />
+          <button onClick={handleLogout} className="nav-logout">
+            Logout
+          </button>
+        </div>
+      )}
+    </nav>
+  );
+}
 
-  function App() {
-    return (
-      <BrowserRouter>
-        <Nav />
-        <AppRoutes />
-      </BrowserRouter>
-    );
-  }
+function LoadingScreen() {
+  return (
+    <div className="loading-screen">
+      <div className="loading-icon" />
+      <span className="loading-text">Loading...</span>
+    </div>
+  );
+}
 
-  export default App;
+function AppRoutes() {
+  const isAuthenticated = useUserStore(state => state.isAuthenticated);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated]);
+
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
+        <Route path="/auth" element={<AuthApp />} />
+        <Route
+          path="/dashboard"
+          element={isAuthenticated ? <DashboardApp /> : <Navigate to="/auth" />}
+        />
+        <Route path="*" element={<Navigate to="/auth" />} />
+      </Routes>
+    </Suspense>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Nav />
+      <AppRoutes />
+    </BrowserRouter>
+  );
+}
+
+export default App;

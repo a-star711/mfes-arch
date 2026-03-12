@@ -1,5 +1,10 @@
 node_modules/
 dist/
 memory/
+MFE-Architecture-Overview.md
+MFE-CrossCommunication-And-Auth.md
 .DS_Store
 *.log
+.claude/
+.agents/
+skills-lock.json
